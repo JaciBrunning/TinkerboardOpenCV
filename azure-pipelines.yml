@@ -5,7 +5,7 @@ resources:
 
 jobs:
 - job: TinkerboardOpenCV
-    pool: 
+  pool: 
     vmImage: 'Ubuntu-16.04'
   container: linux
   steps:
