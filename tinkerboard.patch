@@ -1,0 +1,423 @@
+diff --git a/arm-tinkerboard-gnueabihf.toolchain.cmake b/arm-tinkerboard-gnueabihf.toolchain.cmake
+new file mode 100644
+index 0000000..d5daf6c
+--- /dev/null
++++ b/arm-tinkerboard-gnueabihf.toolchain.cmake
+@@ -0,0 +1,3 @@
++set(GCC_COMPILER_VERSION "" CACHE STRING "GCC Compiler version")
++set(GNU_MACHINE "arm-tinkerboard-linux-gnueabi" CACHE STRING "GNU compiler triple")
++include("${CMAKE_CURRENT_LIST_DIR}/opencv/platforms/linux/arm.toolchain.cmake")
+diff --git a/build.gradle b/build.gradle
+index e96c7d4..4e77d7d 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -85,6 +85,8 @@ def getOutputFormat(platform) {
+         return "elf32-littlearm"
+     } else if (platform == "linux-raspbian") {
+         return "elf32-littlearm"
++    } else if (platform == "linux-tinkerboard") {
++        return "elf32-littlearm"
+     } else if (platform == "linux-x86") {
+         return "elf32-i386"
+     } else if (platform == "linux-x86_64") {
+@@ -107,6 +109,8 @@ def getPlatformPath(platform) {
+         return "linux/athena"
+     } else if (platform == "linux-raspbian") {
+         return "linux/raspbian"
++    } else if (platform == "linux-tinkerboard") {
++        return "linux/tinkerboard"
+     } else if (platform == "linux-x86") {
+         return "linux/x86"
+     } else if (platform == "linux-x86_64") {
+@@ -177,6 +181,9 @@ if (project.platform == "linux-athena") {
+ } else if (project.platform == "linux-raspbian") {
+     stripExe = 'arm-raspbian9-linux-gnueabihf-strip'
+     objCopyExe = 'arm-raspbian9-linux-gnueabihf-objcopy'
++} else if (project.platform == "linux-tinkerboard") {
++    stripExe = 'arm-tinkerboard-linux-gnueabihf-strip'
++    objCopyExe = 'arm-tinkerboard-linux-gnueabihf-objcopy'
+ }
+ 
+ ['': project.cmakeBuildDirectory,
+@@ -227,7 +234,18 @@ if (project.platform == "linux-athena") {
+                     '-DENABLE_VFPV3=ON' +
+                     '-DOPENCV_EXTRA_FLAGS_DEBUG=-Og' +
+                     "-DCMAKE_MODULE_PATH=$rootDir/arm-frc-modules"
++            } else if (project.platform == "linux-tinkerboard") {
++                toolchain = projectDir.canonicalPath + "/arm-tinkerboard-gnueabihf.toolchain.cmake"
++                println "Using toolchain '${toolchain}'"
++                return args + "-DCMAKE_TOOLCHAIN_FILE=${toolchain}" +
++                    '-DCMAKE_MAKE_PROGRAM=make' +
++                    '-DENABLE_NEON=ON' +
++                    '-DENABLE_VFPV3=ON' +
++                    '-DBUILD_JAVA=OFF' +
++                    '-DOPENCV_EXTRA_FLAGS_DEBUG=-Og' +
++                    "-DCMAKE_MODULE_PATH=$rootDir/arm-frc-modules"
+             }
++
+             if (toolchain) {
+                 println "Using toolchain '${toolchain}'"
+                 return args + "-DCMAKE_TOOLCHAIN_FILE=${toolchain}"
+diff --git a/publish.gradle b/publish.gradle
+index b4681b2..7034ce2 100644
+--- a/publish.gradle
++++ b/publish.gradle
+@@ -242,138 +242,138 @@ task cppHeadersZip(type: Zip, dependsOn: make) {
+         }
+     }
+ 
+-    project.tasks.create('jniJar' + buildType, Jar) {
+-        dependsOn tasks.named('make' + buildType)
+-        destinationDir = outputsFolder
+-        classifier = outputClassifier
+-        baseName = jniBaseName
+-        duplicatesStrategy = 'exclude'
+-
+-        manifest {
+-            attributes(
+-                    "Created-By": "WPILib Gradle Build Script",
+-                    "Implementation-Title": "OpenCV JNI Library, ${project.ext.platformClassifier}",
+-                    "Implementation-Version": pubVersion,
+-                    "Implementation-Vendor": "Itseez",
+-
+-                    "Bundle-Name": "${baseName}",
+-                    "Bundle-Version": pubVersion,
+-                    "Bundle-License": "https://opensource.org/licenses/BSD-3-Clause",
+-                    "Bundle-Vendor": "WPILib")
+-        }
+-
+-        from(licenseFile) {
+-            into '/'
+-        }
+-
+-        def directory
+-        def jniFileName
+-        def jniFile
+-
+-        if (!project.platform.startsWith("windows")) {
+-            directory = staticBuildDir.resolve("lib").toFile()
+-            jniFileName = project.platform.startsWith('osx') ? "libopencv_java${libVersion}.dylib" : "libopencv_java${libVersion}.so"
+-            jniFile = new File(directory.absolutePath, "${jniFileName}")
+-        } else {
+-            directory = staticBuildDir.resolve("lib").resolve(buildTypeFolder).toFile()
+-            jniFileName = "opencv_java${libVersion}.dll"
+-            jniFile = new File(directory.absolutePath, "${jniFileName}")
+-        }
+-
+-        def hashFile = new File(directory.absolutePath, "${jniFileName}.hash")
+-        it.outputs.file(hashFile)
+-        it.from(hashFile) {
+-            into project.platformPath
+-        }
+-        it.doFirst {
+-            hashFile.text = MessageDigest.getInstance("MD5").digest(jniFile.bytes).encodeHex().toString()
+-        }
+-        it.from(jniFile) {
+-            into project.platformPath
+-        }
+-    }
+-
+-}
++    // project.tasks.create('jniJar' + buildType, Jar) {
++    //     dependsOn tasks.named('make' + buildType)
++    //     destinationDir = outputsFolder
++    //     classifier = outputClassifier
++    //     baseName = jniBaseName
++    //     duplicatesStrategy = 'exclude'
++
++    //     manifest {
++    //         attributes(
++    //                 "Created-By": "WPILib Gradle Build Script",
++    //                 "Implementation-Title": "OpenCV JNI Library, ${project.ext.platformClassifier}",
++    //                 "Implementation-Version": pubVersion,
++    //                 "Implementation-Vendor": "Itseez",
++
++    //                 "Bundle-Name": "${baseName}",
++    //                 "Bundle-Version": pubVersion,
++    //                 "Bundle-License": "https://opensource.org/licenses/BSD-3-Clause",
++    //                 "Bundle-Vendor": "WPILib")
++    //     }
++
++    //     from(licenseFile) {
++    //         into '/'
++    //     }
++
++    //     def directory
++    //     def jniFileName
++    //     def jniFile
++
++    //     if (!project.platform.startsWith("windows")) {
++    //         directory = staticBuildDir.resolve("lib").toFile()
++    //         jniFileName = project.platform.startsWith('osx') ? "libopencv_java${libVersion}.dylib" : "libopencv_java${libVersion}.so"
++    //         jniFile = new File(directory.absolutePath, "${jniFileName}")
++    //     } else {
++    //         directory = staticBuildDir.resolve("lib").resolve(buildTypeFolder).toFile()
++    //         jniFileName = "opencv_java${libVersion}.dll"
++    //         jniFile = new File(directory.absolutePath, "${jniFileName}")
++    //     }
++
++    //     def hashFile = new File(directory.absolutePath, "${jniFileName}.hash")
++    //     it.outputs.file(hashFile)
++    //     it.from(hashFile) {
++    //         into project.platformPath
++    //     }
++    //     it.doFirst {
++    //         hashFile.text = MessageDigest.getInstance("MD5").digest(jniFile.bytes).encodeHex().toString()
++    //     }
++    //     it.from(jniFile) {
++    //         into project.platformPath
++    //     }
++    // }
+ 
+-task outputJar(type: Jar, dependsOn: make) {
+-    baseName = javaBaseName
+-    destinationDir = outputsFolder
+-    manifest {
+-        attributes(
+-                "Created-By": "WPILib Gradle Build Script",
+-                "Implementation-Title": "OpenCV",
+-                "Implementation-Version": pubVersion,
+-                "Implementation-Vendor": "Itseez",
+-
+-                "Bundle-Name": project.name,
+-                "Bundle-Version": pubVersion,
+-                "Bundle-License": "https://opensource.org/licenses/BSD-3-Clause",
+-                "Bundle-Vendor": "WPILib")
+-    }
+-
+-    from { zipTree(project.pathToOpenCVJar.toFile()) } {
+-        exclude 'META-INF/*'
+-        exclude 'META-INF'
+-        exclude '**/*.java'
+-    }
+ }
+ 
+-task sourcesJar(type: Jar, dependsOn: make) {
+-    baseName = javaBaseName
+-    destinationDir = outputsFolder
+-    classifier = 'sources'
+-    manifest {
+-        attributes(
+-                "Created-By": "WPILib Gradle Build Script",
+-                "Implementation-Title": "OpenCV Java Sources",
+-                "Implementation-Version": pubVersion,
+-                "Implementation-Vendor": "Itseez",
+-
+-                "Bundle-Name": "${project.name}-sources",
+-                "Bundle-Version": pubVersion,
+-                "Bundle-License": "https://opensource.org/licenses/BSD-3-Clause",
+-                "Bundle-Vendor": "WPILib")
+-    }
+-
+-    from(project.cmakeBuildDirectory.resolve("modules").resolve("java").resolve("jar").resolve("opencv").resolve("java").toFile()) {
+-        include '**/*.java'
+-    }
+-}
++// task outputJar(type: Jar, dependsOn: make) {
++//     baseName = javaBaseName
++//     destinationDir = outputsFolder
++//     manifest {
++//         attributes(
++//                 "Created-By": "WPILib Gradle Build Script",
++//                 "Implementation-Title": "OpenCV",
++//                 "Implementation-Version": pubVersion,
++//                 "Implementation-Vendor": "Itseez",
++
++//                 "Bundle-Name": project.name,
++//                 "Bundle-Version": pubVersion,
++//                 "Bundle-License": "https://opensource.org/licenses/BSD-3-Clause",
++//                 "Bundle-Vendor": "WPILib")
++//     }
++
++//     from { zipTree(project.pathToOpenCVJar.toFile()) } {
++//         exclude 'META-INF/*'
++//         exclude 'META-INF'
++//         exclude '**/*.java'
++//     }
++// }
++
++// task sourcesJar(type: Jar, dependsOn: make) {
++//     baseName = javaBaseName
++//     destinationDir = outputsFolder
++//     classifier = 'sources'
++//     manifest {
++//         attributes(
++//                 "Created-By": "WPILib Gradle Build Script",
++//                 "Implementation-Title": "OpenCV Java Sources",
++//                 "Implementation-Version": pubVersion,
++//                 "Implementation-Vendor": "Itseez",
++
++//                 "Bundle-Name": "${project.name}-sources",
++//                 "Bundle-Version": pubVersion,
++//                 "Bundle-License": "https://opensource.org/licenses/BSD-3-Clause",
++//                 "Bundle-Vendor": "WPILib")
++//     }
++
++//     from(project.cmakeBuildDirectory.resolve("modules").resolve("java").resolve("jar").resolve("opencv").resolve("java").toFile()) {
++//         include '**/*.java'
++//     }
++// }
+ 
+ build.dependsOn cppHeadersZip
+ build.dependsOn cppSourcesZip
+ build.dependsOn cppLibsZip
+-build.dependsOn jniJar
++// build.dependsOn jniJar
+ build.dependsOn cppLibsZipDebug
+ build.dependsOn cppLibsZipStatic
+ build.dependsOn cppLibsZipStaticDebug
+-build.dependsOn jniJarDebug
+-build.dependsOn outputJar
+-build.dependsOn sourcesJar
++// build.dependsOn jniJarDebug
++// build.dependsOn outputJar
++// build.dependsOn sourcesJar
+ 
+ artifacts {
+     archives cppHeadersZip
+     archives cppSourcesZip
+     archives cppLibsZip
+-    archives jniJar
++    // archives jniJar
+     archives cppLibsZipDebug
+     archives cppLibsZipStatic
+     archives cppLibsZipStaticDebug
+-    archives jniJarDebug
+-    archives outputJar
+-    archives sourcesJar
++    // archives jniJarDebug
++    // archives outputJar
++    // archives sourcesJar
+ }
+ 
+ addTaskToCopyAllOutputs(cppSourcesZip)
+ addTaskToCopyAllOutputs(cppHeadersZip)
+ addTaskToCopyAllOutputs(cppLibsZip)
+-addTaskToCopyAllOutputs(jniJar)
++// addTaskToCopyAllOutputs(jniJar)
+ addTaskToCopyAllOutputs(cppLibsZipDebug)
+-addTaskToCopyAllOutputs(jniJarDebug)
++// addTaskToCopyAllOutputs(jniJarDebug)
+ addTaskToCopyAllOutputs(cppLibsZipStatic)
+ addTaskToCopyAllOutputs(cppLibsZipStaticDebug)
+-addTaskToCopyAllOutputs(outputJar)
+-addTaskToCopyAllOutputs(sourcesJar)
++// addTaskToCopyAllOutputs(outputJar)
++// addTaskToCopyAllOutputs(sourcesJar)
+ 
+ model {
+     publishing {
+@@ -382,20 +382,20 @@ model {
+             allTask = createAllCombined([cppLibsZip], 'opencv', zipBaseName, Zip, project, '')
+         }
+ 
+-        def allJniTask
+-        if (!project.hasProperty('jenkinsBuild')) {
+-            allJniTask = createAllCombined([jniJar], "opencvJNI", jniBaseName, Jar, project, '')
+-        }
++        // def allJniTask
++        // if (!project.hasProperty('jenkinsBuild')) {
++        //     allJniTask = createAllCombined([jniJar], "opencvJNI", jniBaseName, Jar, project, '')
++        // }
+ 
+         def allTaskDebug
+         if (!project.hasProperty('jenkinsBuild')) {
+             allTaskDebug = createAllCombined([cppLibsZipDebug], 'opencv', zipBaseName, Zip, project, 'debug')
+         }
+ 
+-        def allJniTaskDebug
+-        if (!project.hasProperty('jenkinsBuild')) {
+-            allJniTaskDebug = createAllCombined([jniJarDebug], "opencvJNI", jniBaseName, Jar, project, 'debug')
+-        }
++        // def allJniTaskDebug
++        // if (!project.hasProperty('jenkinsBuild')) {
++        //     allJniTaskDebug = createAllCombined([jniJarDebug], "opencvJNI", jniBaseName, Jar, project, 'debug')
++        // }
+ 
+         def allTaskStatic
+         if (!project.hasProperty('jenkinsBuild')) {
+@@ -408,42 +408,43 @@ model {
+         }
+ 
+         publications {
+-            java(MavenPublication) {
+-                artifact outputJar
+-                artifact sourcesJar {
+-                }
+-
+-                artifactId = "${baseArtifactId}-java"
+-                groupId artifactGroupId
+-                version pubVersion
+-            }
+-            jni(MavenPublication) {
+-                artifact jniJar
+-                artifact jniJarDebug
+-
+-                if (!project.hasProperty('jenkinsBuild')) {
+-                    artifact allJniTask
+-                    artifact allJniTaskDebug
+-                }
+-
+-                artifactId = "${baseArtifactId}-jni"
+-                groupId artifactGroupId
+-                version pubVersion
+-            }
++            // java(MavenPublication) {
++            //     artifact outputJar
++            //     artifact sourcesJar {
++            //     }
++
++            //     artifactId = "${baseArtifactId}-java"
++            //     groupId artifactGroupId
++            //     version pubVersion
++            // }
++            // jni(MavenPublication) {
++            //     artifact jniJar
++            //     artifact jniJarDebug
++
++            //     if (!project.hasProperty('jenkinsBuild')) {
++            //         artifact allJniTask
++            //         artifact allJniTaskDebug
++            //     }
++
++            //     artifactId = "${baseArtifactId}-jni"
++            //     groupId artifactGroupId
++            //     version pubVersion
++            // }
+             cpp(MavenPublication) {
+-                artifact cppHeadersZip
+-                artifact cppSourcesZip
++                // We're just adding some new artifacts, we don't need the headers and sources since those come from wpi
++                // artifact cppHeadersZip
++                // artifact cppSourcesZip
+                 artifact cppLibsZip
+                 artifact cppLibsZipDebug
+                 artifact cppLibsZipStatic
+                 artifact cppLibsZipStaticDebug
+ 
+-                if (!project.hasProperty('jenkinsBuild')) {
+-                    artifact allTask
+-                    artifact allTaskDebug
+-                    artifact allTaskStatic
+-                    artifact allTaskStaticDebug
+-                }
++                // if (!project.hasProperty('jenkinsBuild')) {
++                //     artifact allTask
++                //     artifact allTaskDebug
++                //     artifact allTaskStatic
++                //     artifact allTaskStaticDebug
++                // }
+ 
+                 artifactId = "${baseArtifactId}-cpp"
+                 groupId artifactGroupId
+@@ -452,7 +453,9 @@ model {
+         }
+         repositories {
+             maven {
+-                url "${System.getProperty('user.home')}/releases/maven/${project.repo}"
++                // url "${System.getProperty('user.home')}/releases/maven/${project.repo}"
++                url new File(project.buildDir, 'mvnDistRepo').absolutePath
++                println url
+             }
+         }
+     }
