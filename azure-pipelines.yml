@@ -15,7 +15,7 @@ jobs:
   - script: ./build.sh
   - task: CopyFiles@2
     inputs:
-      sourceFolder: 'gradleDir/mvnDistRepo'
+      sourceFolder: 'thirdparty-opencv/gradleDir/mvnDistRepo'
       contents: '**/*'
       targetFolder: $(Build.ArtifactStagingDirectory)/mvnDistRepo
   - task: PublishBuildArtifacts@1
