@@ -1,0 +1,58 @@
+plugins {
+  id 'maven-publish'
+  id 'base'
+}
+
+group = 'thirdparty.frc.edu.wpi.first'
+version = 'tinker-2019.01.06'
+
+publishing {
+  repositories {
+    maven {
+      url new File(project.buildDir, 'mvnDistRepo').absolutePath
+    }
+  }
+
+  publications {
+    ['cscore', 'cameraserver', 'ntcore', 'wpiutil'].each { lib ->
+      def headerFolder = new File(project.projectDir, '../allwpilib/' + lib + '/src/main/native/include')
+
+      task "zip${lib}Headers"(type: Zip) {
+        from fileTree(headerFolder.absolutePath)
+
+        classifier = "${lib}Headers"
+      }
+
+      "${lib}"(MavenPublication) {
+        artifactId lib
+
+        artifact "zip${lib}Headers" {
+          classifier 'headers'
+        }
+
+        ['Shared', 'SharedDebug', 'Static', 'StaticDebug'].each { type ->
+          def isShared = type.contains('Shared')
+          def isDebug = type.contains('Debug')
+
+          def folder = new File(project.projectDir, '../allwpilib/build' + type + '/lib')
+
+          task "zip${lib}${type}"(type: Zip) {
+            from fileTree(folder.absolutePath).matching {
+              include "**/*${lib}*.*"
+            }
+
+            classifier = "${lib}${type}"
+          }
+
+          artifact "zip${lib}${type}" {
+            classifier 'linuxtinkerboard' + (isShared ? '' : 'static') + (isDebug ? 'debug' : '')
+          }
+        }
+      }
+    }
+  }
+}
+
+wrapper {
+  gradleVersion = 5.0
+}

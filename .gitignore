@@ -1,1 +1,4 @@
 thirdparty-opencv/
+allwpilib/
+build/
+.gradle/

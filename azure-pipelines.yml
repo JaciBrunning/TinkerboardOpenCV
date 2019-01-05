@@ -18,6 +18,12 @@ jobs:
       sourceFolder: 'thirdparty-opencv/gradleDir/mvnDistRepo'
       contents: '**/*'
       targetFolder: $(Build.ArtifactStagingDirectory)/mvnDistRepo
+  - script: ./build_wpi.sh
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: 'wpilib_publish/build/mvnDistRepo'
+      contents: '**/*'
+      targetFolder: $(Build.ArtifactStagingDirectory)/mvnDistRepo
   - task: PublishBuildArtifacts@1
     inputs:
       artifactName: 'maven'
